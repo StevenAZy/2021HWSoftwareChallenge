@@ -1,9 +1,13 @@
 #include<cstdio>
+#include<iostream>
 #include<cstdlib>
 #include<cstring>
+using namespace std;
 
 const int MAX_ROW = 100;
 const int MAX_COL = 100;
+const int MAX_DAY = 1000;
+const int MAX_NUM = 100000;
 
 /* Properties of Server
 Type: 型号，长度不超过20，仅由数字和大小字母构成
@@ -30,7 +34,7 @@ struct VirtualMachine {
     char Type[20];
     int Core;
     int Memory;
-    bool Doublenode;
+    int Doublenode;
 };
 
 /* Properties of Request
@@ -43,26 +47,3 @@ struct Request {
     char Type[20];
     int ID;
 };
-
-// Split String
-int split(char dst[][20], char str[])
-{
-    int n = 0, j = 0;
-    int length = strlen(str);
-    for(int i = 1; i < length; i++)
-    {
-        if(str[i] != ',')
-        {
-            dst[n][j] = str[i];
-            j++; 
-        }
-        else
-        {
-            i++;
-            n++;
-            j = 0;
-        }
-            
-    }
-    return n;
-}

@@ -1,17 +1,17 @@
 #include "iostream"
 #include <string>
-#include "index.h"
+#include "index1.h"
 #include <stdio.h>
 #include <stdlib.h>
 using namespace std;
 
-//¶¨Òå
-Server server[MAXN];                //·şÎñÆ÷
-VirtualMachine virtualMachin[MAXM]; //ĞéÄâ»ú
-Request request[MAXT][MAXR];              //ÇëÇó
+//å®šä¹‰
+Server server[MAXN];                //æœåŠ¡å™¨
+VirtualMachine virtualMachin[MAXM]; //è™šæ‹Ÿæœº
+Request request[MAXT][MAXR];              //è¯·æ±‚
 int serverNum, virtualMachinNum, daysNum, requestNum;
 
-//ÊäÈë²âÊÔÎÄ¼ş
+//è¾“å…¥æµ‹è¯•æ–‡ä»¶
 void Input(char testFile[]) {
 	FILE* file = fopen(testFile, "r");
     char serverMessage[50], serverTemp[5][20], virtualMachinMessage[30], virtualMachinTemp[4][20], requestMessage[30], requestTemp[3][20];
@@ -55,7 +55,7 @@ void Input(char testFile[]) {
 	fclose(file);
 }
 
-//Êä³ö²âÊÔÎÄ¼ş
+//è¾“å‡ºæµ‹è¯•æ–‡ä»¶
 void Output(Server server[], VirtualMachine virtualMachin[], Request request[][MAXR]) {
 	printf("%d\n", serverNum);
     for(int i = 0; i < serverNum; i++){
@@ -81,7 +81,7 @@ int main()
 {
 	// TODO:read standard input
     char testFile[] = "training-1.txt";
-	//ÊäÈë²âÊÔÎÄ¼ş
+	//è¾“å…¥æµ‹è¯•æ–‡ä»¶
 	Input(testFile);
     Output(server, virtualMachin, request);
 	// TODO:process

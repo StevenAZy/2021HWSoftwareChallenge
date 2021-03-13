@@ -49,6 +49,7 @@ public:
 
 /* Properties of VirtualMachine
 Type: 型号，长度不超过20，仅由数字和大小字母构成
+ID：虚拟机ID
 Core：CPU核数
 Memory：内存大小
 Doublenode：是否双节点，0表示单节点存储，1表示双节点存储
@@ -59,6 +60,7 @@ NodeID，0表示第一个节点，1表示第二个节点
 class VirtualMachine {
 public:
     std::string Type;
+    int ID;
     int Core;
     int Memory;
     int Doublenode;
@@ -66,7 +68,7 @@ public:
     int ServerID;
     std::pair<std::string, int> BelongServer;
     VirtualMachine() {}
-    VirtualMachine(std::string t,int c,int m,int d):Type(t),Core(c),Memory(m),Doublenode(d) {}
+    VirtualMachine(std::string t,int id,int c,int m,int d):Type(t),ID(id),Core(c),Memory(m),Doublenode(d) {}
 };
 
 /* Properties of Request

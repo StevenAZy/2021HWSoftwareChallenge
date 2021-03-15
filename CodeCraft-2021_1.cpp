@@ -21,12 +21,15 @@ int Days = 0;                                       //请求序列总天数
 int ServerCount = 0;                                //服务器总数
 long long cost = 0;                                 //总花费
 
+// TODO：修改 assignment 函数，对于新购买的服务器，不做部署；已有服务器可以直接部署；
 void assignment(const string& Type, const int id, 
                 unordered_map<string, int>& Everyday, list<pair<int,string>>& VM_daily_creat) {
     auto vmInfo = VM_list[Type];
     int core = vmInfo.Core;
     int memory = vmInfo.Memory;
     int doubleTag = vmInfo.Doublenode;
+
+    //创建虚拟机
     VM_Buyed.insert(make_pair(id, VirtualMachine(Type,id,core,memory,doubleTag)));
     
     int listLen = Server_list.size();
@@ -58,7 +61,7 @@ void assignment(const string& Type, const int id,
                     break;
                 }
             }
-            if (j == len) {
+            if (j == len) { //如果当前已有服务器无法部署新的虚拟机，则购买
                 Node n1(s.Total_Core/2 - core, s.Total_Memory/2 - memory);
                 Node n2(s.Total_Core/2, s.Total_Memory/2);
                 Server_Buyed[serverName].emplace_back(
@@ -67,6 +70,7 @@ void assignment(const string& Type, const int id,
                 Everyday[serverName]++;
                 ++ServerCount;
             }
+            //修改虚拟机的信息
             VM_Buyed[id].BelongServer.first = serverName;
             VM_Buyed[id].BelongServer.second = len;
             VM_Buyed[id].NodeID = nodeId;
@@ -116,7 +120,6 @@ void assignment(const string& Type, const int id,
 }
 // TODO:迁移虚拟机
 int moveVM();
-
 int main()
 {
     freopen("training-1.txt", "r", stdin);
@@ -149,14 +152,16 @@ int main()
 
     //排序
     sort(Server_list.begin(), Server_list.end(), [](Server& s1, Server& s2) -> bool {
-        if (s1.Total_Core == s2.Total_Core) { return s1.Total_Memory < s2.Total_Memory; }
-        return s1.Total_Core < s2.Total_Core;
+        if (s1.Total_Memory == s2.Total_Memory) { return s1.Total_Core > s2.Total_Core; }
+        return s1.Total_Memory < s2.Total_Memory;
     });
 
     // 加载请求
     cin >> Days;
     for (int i = 0; i < Days; ++i) {
         cin >> lineNum;
+        unordered_map<string, int> Everyday;
+        list<pair<int, string>> VM_daily_creat;
         for (int j = 0; j < lineNum; ++j) {
             Request r;
             cin >> r.Operation;
@@ -168,36 +173,38 @@ int main()
             string id;
             cin >> id;
             r.ID = stoi(id.substr(0, id.size()-1));
-            Request_list[i].emplace_back(r);
-        } 
-        //处理请求
-        unordered_map<string, int> Everyday;
-        list<pair<int, string>> VM_daily_creat;
-        for (auto r : Request_list[i]) {
+
+            /*-----处理请求-----*/
             if (r.Operation == "del") {
                 VirtualMachine vm = VM_Buyed[r.ID];
                 int i = vm.BelongServer.second;
-                auto& svec = Server_Buyed[vm.BelongServer.first][i];
+                auto& server = Server_Buyed[vm.BelongServer.first][i];
                 if (vm.Doublenode == 1) {
-                    svec.node.first.Core += vm.Core / 2;
-                    svec.node.first.Memory += vm.Memory / 2;
-                    svec.node.second.Core += vm.Core / 2;
-                    svec.node.second.Memory += vm.Memory / 2;
+                    server.node.first.Core += vm.Core / 2;
+                    server.node.first.Memory += vm.Memory / 2;
+                    server.node.second.Core += vm.Core / 2;
+                    server.node.second.Memory += vm.Memory / 2;
                 } else {
                     if (vm.NodeID == 0) {
-                        svec.node.first.Core += vm.Core;
-                        svec.node.first.Memory += vm.Memory;
+                        server.node.first.Core += vm.Core;
+                        server.node.first.Memory += vm.Memory;
                     } else if (vm.NodeID == 1) {
-                        svec.node.second.Core += vm.Core;
-                        svec.node.second.Memory += vm.Memory;
+                        server.node.second.Core += vm.Core;
+                        server.node.second.Memory += vm.Memory;
                     }
                 }
                 VM_Buyed.erase(r.ID);
+            } else if (r.Operation == "add") {
+                // TODO：新建虚拟机 vm 并加入到容器 VM_daily_create里，同时判断是否需要购买服务器
             }
-            else {
-                assignment(r.Type,r.ID, Everyday, VM_daily_creat);
-            }
+            // else {
+            //     assignment(r.Type,r.ID, Everyday, VM_daily_creat);
+            // }
         }
+        
+        // TODO：统一处理当天的所有 add 操作；
+
+        /*-----打印当天的输出-----*/
         //打印 (purchase, 当天购买服务器类型总数)
         int len = Everyday.size();
         printf("(purchase, %d)\n",len);
@@ -206,6 +213,7 @@ int main()
             printf("(%s, %d)\n",it.first.c_str(),it.second);
         }
 
+        // TODO：打印迁移服务器的信息
         int mvNum = 0;
         printf("(migration, 0)\n");
 

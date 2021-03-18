@@ -64,11 +64,11 @@ public:
     int Core;
     int Memory;
     int Doublenode;
-    int NodeID;
+    char NodeID;
     int ServerID;
-    std::pair<std::string, int> BelongServer;
+    std::string ServerType;
     VirtualMachine() {}
-    VirtualMachine(std::string t,int id,int c,int m,int d):Type(t),ID(id),Core(c),Memory(m),Doublenode(d) {}
+    VirtualMachine(std::string t,int id,int c,int m,int d):Type(t),ID(id),Core(c),Memory(m),Doublenode(d),NodeID('-'),ServerID(-1),ServerType("") {}
 };
 
 /* Properties of Request

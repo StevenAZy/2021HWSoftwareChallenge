@@ -35,6 +35,7 @@ unordered_map<string, vector<int>> purchaseToday;
 int total_nums = 0;  //已购服务器总数
 int total_days = 0;  //总请求天数
 int cur_day = 0;     //当前天数
+double lambda = 0.5;
 /****************************************************************************/
 
 /**********************************函数声明***********************************/
@@ -63,6 +64,8 @@ void printDeployInfo(const VirtualMachine& vm);
 
 int main()
 {
+    // freopen("training-1.txt", "r", stdin);
+    // freopen("output.txt", "w", stdout);
     int num;
     cin >> num;
     Server_list.resize(num);
@@ -73,33 +76,20 @@ int main()
     cin >> num;
     getVMInfo(num);
 
-    //对所有服务器按日均消耗排序
-    sort(Server_list.begin(), Server_list.end(), [](const Server& s1, const Server& s2) -> bool {
-        return s1.DailyEnergy_cost < s2.DailyEnergy_cost;
-    });
     //对所有服务器按照性价比排序
     sort(Server_list.begin(), Server_list.end(), [](const Server& s1, const Server& s2) -> bool {
-        double cost1 = (s1.Hardware_cost + s1.DailyEnergy_cost) / (s1.A_CoreSize + s1.B_CoreSize) + 
-                        (s1.Hardware_cost + s1.DailyEnergy_cost) / (s1.A_MemorySize + s1.B_MemorySize);
-        double cost2 = (s2.Hardware_cost + s2.DailyEnergy_cost) / (s2.A_CoreSize + s2.B_CoreSize) + 
-                        (s2.Hardware_cost + s2.DailyEnergy_cost) / (s2.A_MemorySize + s2.B_MemorySize) + s2.DailyEnergy_cost;
+        double cost1 = s1.Hardware_cost / (s1.A_CoreSize + s1.B_CoreSize) + 
+                        s1.Hardware_cost / (s1.A_MemorySize + s1.B_MemorySize) + s1.DailyEnergy_cost;
+        double cost2 = s2.Hardware_cost / (s2.A_CoreSize + s2.B_CoreSize) + 
+                        s2.Hardware_cost / (s2.A_MemorySize + s2.B_MemorySize) + s2.DailyEnergy_cost;
         return cost1 < cost2;
     });
-    // sort(Server_list.begin(), Server_list.end(), [](const Server& s1, const Server& s2) -> bool {
-    //     double cost1 = s1.Hardware_cost / (s1.A_CoreSize + s1.B_CoreSize) + 
-    //                     s1.Hardware_cost / (s1.A_MemorySize + s1.B_MemorySize) + s1.DailyEnergy_cost;
-    //     double cost2 = s2.Hardware_cost / (s2.A_CoreSize + s2.B_CoreSize) + 
-    //                     s2.Hardware_cost / (s2.A_MemorySize + s2.B_MemorySize) + s2.DailyEnergy_cost;
-    //     return cost1 < cost2;
-    // });
 
     cin >> total_days;
     for (int i = 0; i < total_days; ++i) {
         cin >> num;
         cur_day++;
         int purchaseNum_Today = 0;  //今天购买的服务器数量
-        int noDel = 1;
-        vector<int> tempCreateVM_Today;   //存储当天双节点部署的虚拟机
         
         //按天处理请求
         for (int j = 0; j < num; ++j) {
@@ -109,59 +99,21 @@ int main()
             if (r.Operation == "add") {
                 addList.push_back(r.ID);
                 VirtualMachine TempVM(r.Type,r.ID,VM_list[r.Type].Core,VM_list[r.Type].Memory,VM_list[r.Type].isDouble);
-                //先不部署，存起来，遇到del再部署
-                tempCreateVM_Today.push_back(r.ID);
+                bool isDone = deployVM(TempVM);
+                //如果部署不成功，则购买服务器
+                if (!isDone) {
+                    buyServer(TempVM, purchaseNum_Today);
+                }
                 TotalVM.insert( {TempVM.ID, TempVM} );
-                noDel = 1;
+                createVM_Today[TempVM.ServerID].push_back(r.ID);
             }
             //如果是"del"执行删除操作
             else if (r.Operation == "del") {
-                //先单后双
-                for (auto id : tempCreateVM_Today) {
-                    if (TotalVM[id].isDouble == 1) {continue;}
-                    bool isDone = deployVM(TotalVM[id]);
-                    //如果部署不成功，则购买服务器
-                    if (!isDone) {
-                        buyServer(TotalVM[id], purchaseNum_Today);
-                    }
-                    createVM_Today[TotalVM[id].ServerID].push_back(id);
+                if (TotalVM.count(r.ID)) {
+                    delVM(TotalVM[r.ID]);
                 }
-                for (auto id : tempCreateVM_Today) {
-                    if (TotalVM[id].isDouble == 0) {continue;}
-                    bool isDone = deployVM(TotalVM[id]);
-                    //如果部署不成功，则购买服务器
-                    if (!isDone) {
-                        buyServer(TotalVM[id], purchaseNum_Today);
-                    }
-                    createVM_Today[TotalVM[id].ServerID].push_back(id);
-                }
-                delVM(TotalVM[r.ID]);
-                tempCreateVM_Today.clear();
-                noDel = 0;
             }
         }
-        if (noDel == 1) {
-            //部署虚拟机，先单后双
-            for (auto id : tempCreateVM_Today) {
-                if (TotalVM[id].isDouble == 1) {continue;}
-                bool isDone = deployVM(TotalVM[id]);
-                //如果部署不成功，则购买服务器
-                if (!isDone) {
-                    buyServer(TotalVM[id], purchaseNum_Today);
-                }
-                createVM_Today[TotalVM[id].ServerID].push_back(id);
-            }
-            for (auto id : tempCreateVM_Today) {
-                if (TotalVM[id].isDouble == 0) {continue;}
-                bool isDone = deployVM(TotalVM[id]);
-                //如果部署不成功，则购买服务器
-                if (!isDone) {
-                    buyServer(TotalVM[id], purchaseNum_Today);
-                }
-                createVM_Today[TotalVM[id].ServerID].push_back(id);
-            }
-        }
-
 
         //对当天购买的服务器ID重排序，并打印购买信息
         int serverNums = purchaseToday.size();
@@ -264,58 +216,34 @@ void delVM(VirtualMachine& vm) {
 //部署函数
 bool deployVM(VirtualMachine& vm) {
     int isdone = 0;         //是否部署成功
-    double gap = INT32_MAX;
-    double lambda = 1;
-    int candidateID = -1;
-    char candidateNodeID = '-';
     for (auto s = TotalServer.begin(); s !=  TotalServer.end(); ++s) {
         if (vm.isDouble == 1) {
             if (s->second.A_CoreSize >= vm.Core/2 && s->second.A_MemorySize >= vm.Memory/2
                 && s->second.B_CoreSize >= vm.Core/2 && s->second.B_MemorySize >= vm.Memory/2) {
-                    double val_A = lambda * (s->second.A_CoreSize - vm.Core) + (1 - lambda) * (s->second.A_MemorySize - vm.Memory);
-                    double val_B = lambda * (s->second.B_CoreSize - vm.Core) + (1 - lambda) * (s->second.B_MemorySize - vm.Memory);
-                    if (min(val_A, val_B) < gap) {
-                        gap = min(val_A, val_B);
-                        candidateID = s->first;
-                        candidateNodeID = 'D';
-                    }
+                    s->second.A_CoreSize -= vm.Core / 2;
+                    s->second.A_MemorySize -= vm.Memory / 2;
+                    s->second.B_CoreSize -= vm.Core / 2;
+                    s->second.B_MemorySize -= vm.Memory / 2;
+                    vm.NodeID = 'D';
+                    isdone = 1;
             }
         } else {
             if (s->second.A_CoreSize >= vm.Core && s->second.A_MemorySize >= vm.Memory) {
-                double val = lambda * (s->second.A_CoreSize - vm.Core) + (1 - lambda) * (s->second.A_MemorySize - vm.Memory);
-                if (val < gap) {
-                    gap = val;
-                    candidateID = s->first;
-                    candidateNodeID = 'A';
-                }
+                s->second.A_CoreSize -= vm.Core;
+                s->second.A_MemorySize -= vm.Memory;
+                vm.NodeID = 'A';
+                isdone = 1;
             } else if (s->second.B_CoreSize >= vm.Core && s->second.B_MemorySize >= vm.Memory) {
-                double val = lambda * (s->second.B_CoreSize - vm.Core) + (1 - lambda) * (s->second.B_MemorySize - vm.Memory);
-                if (val < gap) {
-                    gap = val;
-                    candidateID = s->first;
-                    candidateNodeID = 'B';
-                }
+                s->second.B_CoreSize -= vm.Core;
+                s->second.B_MemorySize -= vm.Memory;
+                vm.NodeID = 'B';
+                isdone = 1;
             }
         }
-    }
-    if (candidateID != -1 && candidateNodeID != '-') {
-        if (vm.isDouble == 1) {
-            TotalServer[candidateID].A_CoreSize -= vm.Core / 2;
-            TotalServer[candidateID].A_MemorySize -= vm.Memory / 2;
-            TotalServer[candidateID].B_CoreSize -= vm.Core / 2;
-            TotalServer[candidateID].B_MemorySize -= vm.Memory / 2;
-        } else {
-            if (candidateNodeID == 'A') {
-                TotalServer[candidateID].A_CoreSize -= vm.Core;
-                TotalServer[candidateID].A_MemorySize -= vm.Memory;
-            } else if (candidateNodeID == 'B') {
-                TotalServer[candidateID].B_CoreSize -= vm.Core;
-                TotalServer[candidateID].B_MemorySize -= vm.Memory;
-            }
+        if (isdone == 1) {
+            vm.ServerID = s->first;
+            break;
         }
-        vm.NodeID = candidateNodeID;
-        vm.ServerID = candidateID;
-        isdone = 1;
     }
     return isdone == 1 ? true : false;
 }
